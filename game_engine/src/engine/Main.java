@@ -1,6 +1,4 @@
-package main;
-
-import engine.Game;
+package engine;
 
 public class Main {
     public static void main(String[] args) {
