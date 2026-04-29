@@ -5,6 +5,7 @@ import engine.SceneManager;
 import engine.input.InputManager;
 import engine.input.KeyboardInput;
 
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Color;
 import java.awt.Font;
@@ -38,7 +39,7 @@ public class GameOverScene extends Scene {
     }
 
     @Override
-    public void render(Graphics2D g) {
+    public void render(Graphics g) {
         g.setColor(new Color(30, 0, 0));
         g.fillRect(0, 0, 800, 600); // Assuming 800x600 window size
 

@@ -2,6 +2,7 @@ package scenes;
 
 import engine.Scene;
 import engine.SceneManager;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Color;
 import java.awt.Font;
@@ -26,14 +27,14 @@ public class MainMenuScene extends Scene {
     }
 
     @Override
-    public void render(Graphics2D g) {
+    public void render(Graphics g) {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600); // Assuming 800x600 for now
 
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 36));
         g.drawString("MAIN MENU", 300, 200);
-        
+
         g.setFont(new Font("Arial", Font.PLAIN, 24));
         g.drawString("Press ENTER to Start", 280, 300);
     }

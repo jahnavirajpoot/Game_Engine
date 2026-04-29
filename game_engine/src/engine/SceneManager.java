@@ -30,6 +30,10 @@ public class SceneManager {
         }
     }
 
+    public void setScene(Scene scene) {
+        currentScene = scene;
+    }
+
     // Update current scene
     public void update() {
         if (currentScene != null) {
