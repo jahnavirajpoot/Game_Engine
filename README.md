@@ -111,9 +111,7 @@ java -cp game_engine/src SnakeGame
 - ✅ BFS pathfinding with full diagnostics
 - ✅ Grid-based pathfinding utilities
 - ✅ Standalone Snake game
-
-### In Progress
-- 🔄 A* pathfinding (heuristic and helpers implemented, search logic pending)
+- ✅ A* Pathfinind
 
 ## Notes
 
