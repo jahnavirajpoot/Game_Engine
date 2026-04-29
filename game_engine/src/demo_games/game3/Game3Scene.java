@@ -6,6 +6,8 @@ import engine.input.KeyboardInput;
 import engine.input.MouseInput;
 import engine.physics.PhysicsBody;
 import engine.physics.PhysicsEngine;
+import engine.audio.AudioEngine;
+import engine.ui.PauseMenu;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -74,6 +76,10 @@ public class Game3Scene extends Scene {
 
     // ── Wrapper for spawned bodies (body + color) ────────────────────────
 
+    // ── New Features ─────────────────────────────────────────────────────
+    private AudioEngine audio;
+    private PauseMenu pauseMenu;
+
     private static class SpawnedBody {
         PhysicsBody body;
         Color color;
@@ -85,6 +91,13 @@ public class Game3Scene extends Scene {
     public Game3Scene(Component canvas) {
         input = InputManager.getInstance();
         input.attachTo(canvas);
+
+        audio = new AudioEngine();
+        audio.loadSound("pop", "/assets/audio/pop.wav");
+        audio.loadSound("whoosh", "/assets/audio/whoosh.wav");
+        audio.loadSound("click", "/assets/audio/click.wav");
+
+        pauseMenu = new PauseMenu();
 
         physics = new PhysicsEngine();
         buildPlatforms();
@@ -126,9 +139,20 @@ public class Game3Scene extends Scene {
         KeyboardInput kb = input.getKeyboard();
         MouseInput    ms = input.getMouse();
 
+        if (kb.isJustPressed(KeyEvent.VK_ESCAPE)) {
+            pauseMenu.togglePause();
+        }
+
+        if (pauseMenu.isPaused()) {
+            pauseMenu.update();
+            input.endFrame();
+            return;
+        }
+
         // Toggle gravity
         if (kb.isJustPressed(KeyEvent.VK_G)) {
             gravityOn = !gravityOn;
+            audio.playSound("click");
             // Update all spawned bodies
             for (SpawnedBody sb : spawned) {
                 sb.body.affectedByGravity = gravityOn;
@@ -148,6 +172,7 @@ public class Game3Scene extends Scene {
         // Spawn on left click
         if (ms.isLeftClicked() && spawned.size() < MAX_BODIES) {
             spawnObject(ms.getX(), ms.getY());
+            audio.playSound("pop");
         }
 
         // Burst spawn on right click (5 objects in a cluster)
@@ -157,6 +182,7 @@ public class Game3Scene extends Scene {
                 float oy = ms.getY() + rng.nextInt(40) - 20;
                 if (spawned.size() < MAX_BODIES) spawnObject(ox, oy);
             }
+            audio.playSound("whoosh");
         }
 
         // Physics step
@@ -255,6 +281,9 @@ public class Game3Scene extends Scene {
 
         // Spawn preview at cursor
         drawCursorPreview(g2);
+        
+        // Pause Menu
+        pauseMenu.render(g2, W, H);
     }
 
     // ── HUD ──────────────────────────────────────────────────────────────

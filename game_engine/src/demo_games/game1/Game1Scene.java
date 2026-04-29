@@ -9,23 +9,17 @@ import engine.pathfinding.AStarPathfinder;
 import engine.pathfinding.BFSPathfinder;
 import engine.pathfinding.Grid;
 import engine.pathfinding.Node;
+import engine.audio.AudioEngine;
+import engine.graphics.Camera;
+import engine.ui.PauseMenu;
+import engine.database.DatabaseManager;
+import engine.assets.AssetManager;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Game1Scene — "Dungeon Chase"
- *
- * Full game demo integrating every engine subsystem:
- *   • Player movement via InputManager (WASD / Arrows)
- *   • PhysicsEngine for collision detection against walls
- *   • Enemy AI that chases the player using BFS or A* pathfinding
- *   • Press [P] to toggle pathfinding algorithm
- *   • Press [R] to reset positions
- *   • HUD showing algorithm, path length, nodes explored, and score
- */
 public class Game1Scene extends Scene {
 
     // ── Dimensions ───────────────────────────────────────────────────────
@@ -64,6 +58,12 @@ public class Game1Scene extends Scene {
     private int score = 0;
     private int frameTick = 0;
 
+    // ── New Features ─────────────────────────────────────────────────────
+    private AudioEngine audio;
+    private Camera camera;
+    private PauseMenu pauseMenu;
+    private DatabaseManager db;
+
     // ── Obstacle layout (row, col) ───────────────────────────────────────
     private static final int[][] WALLS = {
         // top corridor
@@ -95,6 +95,16 @@ public class Game1Scene extends Scene {
     public Game1Scene(Component canvas) {
         input = InputManager.getInstance();
         input.attachTo(canvas);
+
+        audio = new AudioEngine();
+        audio.loadSound("bgm", "/assets/audio/bgm.wav");
+        audio.loadSound("footstep", "/assets/audio/footstep.wav");
+        audio.loadSound("toggle", "/assets/audio/toggle.wav");
+        audio.loopSound("bgm");
+
+        camera = new Camera(0, 0);
+        pauseMenu = new PauseMenu();
+        db = new DatabaseManager();
 
         initGrid();
         initPhysics();
@@ -151,9 +161,20 @@ public class Game1Scene extends Scene {
     public void update() {
         KeyboardInput kb = input.getKeyboard();
 
+        if (kb.isJustPressed(KeyEvent.VK_ESCAPE)) {
+            pauseMenu.togglePause();
+        }
+
+        if (pauseMenu.isPaused()) {
+            pauseMenu.update();
+            input.endFrame();
+            return;
+        }
+
         // Toggle algorithm
         if (kb.isJustPressed(KeyEvent.VK_P)) {
             useAStar = !useAStar;
+            audio.playSound("toggle");
             recalcPath();
         }
 
@@ -173,8 +194,16 @@ public class Game1Scene extends Scene {
             float f = 0.7071f;
             vx *= f; vy *= f;
         }
+        
+        if ((vx != 0 || vy != 0) && frameTick % 15 == 0) {
+            audio.playSound("footstep");
+        }
+        
         player.velocity.x = vx;
         player.velocity.y = vy;
+
+        // Update camera to follow player
+        camera.update(player.position.x - W / 2f + PLAYER_SZ / 2f, player.position.y - H / 2f + PLAYER_SZ / 2f);
 
         // Enemy pathfinding
         pathTick++;
@@ -202,9 +231,13 @@ public class Game1Scene extends Scene {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                             RenderingHints.VALUE_ANTIALIAS_ON);
 
+        // Apply camera transform
+        g2.translate(-camera.getX(), -camera.getY());
+
         // Background — dark dungeon
         g2.setColor(new Color(15, 12, 25));
-        g2.fillRect(0, 0, W, H);
+        // We draw background larger than screen to account for camera movement
+        g2.fillRect((int)camera.getX(), (int)camera.getY(), W, H);
 
         // Grid lines
         g2.setColor(new Color(30, 25, 45));
@@ -280,8 +313,14 @@ public class Game1Scene extends Scene {
         g2.setFont(new Font("SansSerif", Font.BOLD, 10));
         g2.drawString("E", ex + ENEMY_SZ / 2 - 3, ey + ENEMY_SZ / 2 + 4);
 
+        // Restore transform for HUD
+        g2.translate(camera.getX(), camera.getY());
+
         // HUD
         drawHUD(g2);
+        
+        // Pause Menu
+        pauseMenu.render(g2, W, H);
     }
 
     // ── HUD ──────────────────────────────────────────────────────────────
@@ -381,6 +420,9 @@ public class Game1Scene extends Scene {
         enemy.velocity.x = 0; enemy.velocity.y = 0;
         enemy.syncBounds();
 
+        if (score > 0) {
+            db.saveScore("Player", score);
+        }
         score = 0;
         frameTick = 0;
         recalcPath();

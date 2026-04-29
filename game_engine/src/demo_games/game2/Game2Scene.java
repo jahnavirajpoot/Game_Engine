@@ -8,6 +8,8 @@ import engine.pathfinding.AStarPathfinder;
 import engine.pathfinding.BFSPathfinder;
 import engine.pathfinding.Grid;
 import engine.pathfinding.Node;
+import engine.audio.AudioEngine;
+import engine.ui.PauseMenu;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -60,11 +62,22 @@ public class Game2Scene extends Scene {
     // ── Pulse animation ──────────────────────────────────────────────────
     private int animTick = 0;
 
+    // ── New Features ─────────────────────────────────────────────────────
+    private AudioEngine audio;
+    private PauseMenu pauseMenu;
+
     // ── Constructor ──────────────────────────────────────────────────────
 
     public Game2Scene(Component canvas) {
         input = InputManager.getInstance();
         input.attachTo(canvas);
+
+        audio = new AudioEngine();
+        audio.loadSound("click", "/assets/audio/click.wav");
+        audio.loadSound("thud", "/assets/audio/thud.wav");
+        audio.loadSound("chime", "/assets/audio/chime.wav");
+
+        pauseMenu = new PauseMenu();
 
         grid  = new Grid(ROWS, COLS, CELL);
         bfs   = new BFSPathfinder(grid);
@@ -93,6 +106,16 @@ public class Game2Scene extends Scene {
         KeyboardInput kb = input.getKeyboard();
         MouseInput    ms = input.getMouse();
 
+        if (kb.isJustPressed(KeyEvent.VK_ESCAPE)) {
+            pauseMenu.togglePause();
+        }
+
+        if (pauseMenu.isPaused()) {
+            pauseMenu.update();
+            input.endFrame();
+            return;
+        }
+
         animTick++;
 
         // Toggle algorithm
@@ -108,6 +131,7 @@ public class Game2Scene extends Scene {
 
         // Manual recalc
         if (kb.isJump()) {   // SPACE
+            audio.playSound("chime");
             pathDirty = true;
         }
 
@@ -136,6 +160,7 @@ public class Game2Scene extends Scene {
                 if (n != null && n.walkable) {
                     goalRow = row;
                     goalCol = col;
+                    audio.playSound("click");
                     pathDirty = true;
                 }
             }
@@ -156,6 +181,7 @@ public class Game2Scene extends Scene {
                         } else {
                             grid.clearObstacle(row, col);
                         }
+                        audio.playSound("thud");
                         pathDirty = true;
                     }
                 }
@@ -279,6 +305,9 @@ public class Game2Scene extends Scene {
 
         // HUD
         drawHUD(g2);
+        
+        // Pause Menu
+        pauseMenu.render(g2, W, H);
     }
 
     // ── HUD ──────────────────────────────────────────────────────────────
